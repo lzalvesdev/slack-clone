@@ -51,7 +51,7 @@ export const WorkspaceHeader = ({ workspace, isAdmin }: IWorkspaceHeaderProps) =
                 <DropdownMenuItem
                   className="cursor-pointer py-2"
                   onClick={() => { }}>
-                  Convidar alguém para {workspace?.name}
+                  Convidar pessoas para {workspace?.name}
                 </DropdownMenuItem>
 
                 <DropdownMenuItem
@@ -63,13 +63,13 @@ export const WorkspaceHeader = ({ workspace, isAdmin }: IWorkspaceHeaderProps) =
           </DropdownMenuContent>
         </DropdownMenu>
         <div className="flex items-center gap-0.5">
-          <Hint label="Filtrar Conversas" side="bottom">
+          <Hint label="Filtrar conversas" side="bottom">
             <Button variant="transparent" size="iconSm">
               <ListFilter className="size-4" />
             </Button>
           </Hint>
 
-          <Hint label="Nova Mensagem" side="bottom">
+          <Hint label="Nova mensagem" side="bottom">
             <Button variant="transparent" size="iconSm">
               <SquarePen className="size-4" />
             </Button>
