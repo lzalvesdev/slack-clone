@@ -35,6 +35,11 @@ export const create = mutation({
       role: 'admin'
     });
 
+    await ctx.db.insert("channels", {
+      name: 'geral',
+      workspaceId
+    });
+
     return workspaceId;
   }
 })
@@ -157,3 +162,73 @@ export const remove = mutation({
     return args.id;
   },
 });
+
+export const newJoinCode = mutation({
+  args: {
+    workspaceId: v.id('workspaces'),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+
+    if (!userId)
+      throw new Error("Não autorizado");
+
+    const member = await ctx.db
+      .query('members')
+      .withIndex("by_workspace_id_user_id", q =>
+        q.eq("workspaceId", args.workspaceId).eq("userId", userId),
+      )
+      .unique();
+
+    if (!member || member.role !== 'admin')
+      throw new Error("Não autorizado")
+
+    const joinCode = generateCode();
+
+    await ctx.db.patch(args.workspaceId, {
+      joinCode
+    });
+
+    return args.workspaceId;
+  }
+
+})
+
+export const join = mutation({
+  args: {
+    joinCode: v.string(),
+    workspaceId: v.id('workspaces'),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+
+    if (!userId)
+      throw new Error("Não autorizado");
+
+    const workspace = await ctx.db.get(args.workspaceId);
+
+    if (!workspace)
+      throw new Error("Workspace inexistente");
+
+    if (workspace.joinCode !== args.joinCode.toLowerCase())
+      throw new Error("Código inválido");
+
+    const existingMember = await ctx.db
+      .query('members')
+      .withIndex("by_workspace_id_user_id", q =>
+        q.eq("workspaceId", args.workspaceId).eq("userId", userId),
+      )
+      .unique();
+
+    if (existingMember)
+      throw new Error("Ja é membro deste workspace");
+
+    await ctx.db.insert('members', {
+      userId,
+      workspaceId: workspace._id,
+      role: 'member'
+    });
+
+    return workspace._id;
+  }
+})
