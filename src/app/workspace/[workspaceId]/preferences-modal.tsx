@@ -106,7 +106,7 @@ export const PreferencesModal = ({
 
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Renomerar esse Workspace</DialogTitle>
+                  <DialogTitle>Renomear esse workspace</DialogTitle>
                 </DialogHeader>
                 <form className="space-y-4" onSubmit={handleEdit}>
                   <Input

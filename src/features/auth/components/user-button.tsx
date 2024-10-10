@@ -15,10 +15,12 @@ import {
 
 import { useCurrentUser } from "../api/use-current-user";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useRouter } from "next/navigation";
 
 const UserButton = () => {
   const { signOut } = useAuthActions();
   const { data, isLoading } = useCurrentUser();
+  const router = useRouter();
 
   if (isLoading)
     return <Loader className="size-4 animate-spin text-muted-foreground" />
@@ -29,6 +31,11 @@ const UserButton = () => {
   const { image, name } = data
 
   const avatarFallback = name!.charAt(0).toUpperCase();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace("/auth");
+  }
 
   return (
     <DropdownMenu modal={false}>
@@ -44,7 +51,7 @@ const UserButton = () => {
       <DropdownMenuContent align="center" side="right" className="w-60">
         <DropdownMenuItem
           className="h-10 cursor-pointer"
-          onClick={() => signOut()} >
+          onClick={handleSignOut} >
           <LogOut className="size-4 mr-2" />
           Sair
         </DropdownMenuItem>
