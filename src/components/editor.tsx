@@ -7,6 +7,8 @@ import { Button } from "./ui/button";
 import { ImageIcon, Smile } from "lucide-react";
 import { Hint } from "./hint"
 import { Delta, Op } from "quill/core"
+import { cn } from "@/lib/utils"
+import { EmojiPopover } from "./emoji-provider"
 
 type EditorValue = {
   image: File | null;
@@ -33,6 +35,7 @@ export const Editor = ({
   variant = "create"
 }: IEditorProps) => {
   const [text, setText] = useState("");
+  const [isToolbarVisible, setIsToolbarVisible] = useState(true);
 
   const submitRef = useRef(onSubmit)
   const placeholderRef = useRef(placeholder)
@@ -59,7 +62,31 @@ export const Editor = ({
     const options: QuillOptions = {
       theme: "snow",
       placeholder: placeholderRef.current,
-    }
+      modules: {
+        toolbar: [
+          ["bold", "italic", "strike"],
+          ["link"],
+          [{ list: "bullet" }, { list: "ordered" }],
+        ],
+        keyboard: {
+          bindings: {
+            enter: {
+              key: "Enter",
+              handler: () => {
+                return;
+              }
+            },
+            shift_enter: {
+              key: "Enter",
+              shiftKey: true,
+              handler: () => {
+                quill.insertText(quill.getSelection()?.index || 0, "\n");
+              }
+            }
+          },
+        },
+      },
+    };
 
     const quill = new Quill(editorContainer, options);
     quillRef.current = quill
@@ -68,42 +95,66 @@ export const Editor = ({
     if (innerRef)
       innerRef.current = quill
 
+    quill.setContents(defaultValueRef.current);
+    setText(quill.getText());
+
+    quill.on(Quill.events.TEXT_CHANGE, () => {
+      setText(quill.getText());
+    });
+
     return () => {
+      quill.off(Quill.events.TEXT_CHANGE);
+
       if (container)
         container.innerHTML = '';
-    }
 
-  }, [])
+      if (quillRef.current)
+        quillRef.current = null
+
+      if (innerRef)
+        innerRef.current = null
+    }
+  }, [innerRef])
+
+  const toogleToolbar = () => {
+    setIsToolbarVisible((current) => !current);
+    const toolbarElement = containerRef.current?.querySelector(".ql-toolbar");
+
+    if (toolbarElement)
+      toolbarElement.classList.toggle("hidden");
+  }
+
+  const isEmpty = text.replace(/<(.|\n)*?>/g, "").trim().length === 0;
 
   return (
     <div className="flex flex-col">
       <div className="flex flex-col border border-slate-200 rounded-md overflow-hidden focus-within:border-slate-300 focus-within:shadow-sm bg-white">
         <div ref={containerRef} className="h-full ql-custom" />
         <div className="flex px-2 pb-2 z-[4]">
-          <Hint label="Ocultar formatação">
+          <Hint label={isToolbarVisible ? "Ocultar formatação" : "Exibir formatação"}>
             <Button
-              disabled={false}
+              disabled={disabled}
               size="iconSm"
               variant="ghost"
-              onClick={() => { }}
+              onClick={toogleToolbar}
             >
               <PiTextAa className="size-5" />
             </Button>
           </Hint>
-          <Hint label="Emoji">
+          <EmojiPopover onEmojiSelect={() => { }}>
             <Button
-              disabled={false}
+              disabled={disabled}
               size="iconSm"
               variant="ghost"
               onClick={() => { }}
             >
               <Smile className="size-5" />
             </Button>
-          </Hint>
+          </EmojiPopover>
           {variant === "create" && (
             <Hint label="Adicionar imagem">
               <Button
-                disabled={false}
+                disabled={disabled}
                 size="iconSm"
                 variant="ghost"
                 onClick={() => { }}
@@ -118,15 +169,15 @@ export const Editor = ({
                 variant="outline"
                 size="sm"
                 onClick={() => { }}
-                disabled={false}
+                disabled={disabled}
               >
                 Cancelar
               </Button>
               <Button
+                disabled={disabled || isEmpty}
                 className=" bg-[#007a5a] hover:bg-[#007a5a]/80 text-white"
                 size="sm"
                 onClick={() => { }}
-                disabled={false}
               >
                 Salvar
               </Button>
@@ -134,9 +185,14 @@ export const Editor = ({
           )}
           {variant === "create" && (
             <Button
-              disabled={false}
+              disabled={disabled || isEmpty}
               size="iconSm"
-              className="ml-auto bg-[#007a5a] hover:bg-[#007a5a]/80 text-white"
+              className={cn(
+                "ml-auto",
+                isEmpty
+                  ? "bg-white hover:bg-white text-muted-foreground"
+                  : "bg-[#007a5a] hover:bg-[#007a5a]/80 text-white"
+              )}
               onClick={() => { }}
             >
               <MdSend className="size-4" />
@@ -144,13 +200,18 @@ export const Editor = ({
           )}
         </div>
       </div>
-      <div className="p-2 text-[10px] text-muted-foreground flex justify-end">
-        <p>
-          <strong>Shift + Enter</strong> para quebra de linha
-        </p>
-      </div>
+      {variant === "create" && (
+        <div className={cn(
+          "p-2 text-[10px] text-muted-foreground flex justify-end opacity-0 transition",
+          !isEmpty && "opacity-100"
+        )}>
+          <p>
+            <strong>Shift + Enter</strong> para quebra de linha
+          </p>
+        </div>
+      )}
     </div>
   )
-}
+};
 
 export default Editor;
